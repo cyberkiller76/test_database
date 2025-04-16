@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Maxel File Server</title>
+    <title>Company File Server</title>
     <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
     <style>
         body {
@@ -45,7 +45,7 @@
         <div class="sidebar w-64 p-4">
             <div class="mb-4">
                 <h2 class="text-sm font-bold">User</h2>
-                <p class="text-sm">Admin</p>
+                <p class="text-sm">Guest (Local)</p>
             </div>
 
             <!-- Folder Navigation -->
@@ -65,7 +65,14 @@
                     <input id="docTitle" type="text" placeholder="Document Title" class="w-full p-1 text-sm">
                     <textarea id="docContent" placeholder="Content" class="w-full p-1 text-sm" rows="3"></textarea>
                     <input id="docTags" type="text" placeholder="Tags (comma-separated)" class="w-full p-1 text-sm">
-                   
+                    <select id="docFolder" class="w-full p-1 text-sm">
+                        <option value="General">General</option>
+                        <option value="HR">HR</option>
+                        <option value="Finance">Finance</option>
+                        <option value="IT">IT</option>
+                        <option value="Marketing">Marketing</option>
+                        <option value="Operations">Operations</option>
+                    </select>
                     <button onclick="addDocument()" class="w-full text-sm">Add</button>
                 </div>
             </div>
@@ -74,7 +81,7 @@
             <div class="mb-4">
                 <h2 class="text-sm font-bold">Search</h2>
                 <div class="flex space-x-1">
-                    <input id="searchInput" type="text" placeholder="Search..." class="w-full p-1 text-sm" onkeyup="searchDocuments()">
+                    <input id="searchInput" type="text" placeholder="Search..." class="w-full p-1 text-sm" onkeyup="if(event.keyCode === 13) searchDocuments()">
                     <button onclick="searchDocuments()" class="text-sm">Go</button>
                 </div>
             </div>
@@ -102,7 +109,7 @@
             <!-- Server Information -->
             <div>
                 <h2 class="text-sm font-bold">Server Information</h2>
-                <p class="text-xs">Maxel File Server</p>
+                <p class="text-xs">Company File Server</p>
                 <p class="text-xs">Server time: <span id="serverTime"></span></p>
                 <p class="text-xs">Uptime: Simulated</p>
             </div>
@@ -125,12 +132,24 @@
 
     <script>
         // Initialize documents array from localStorage
-        let documents = JSON.parse(localStorage.getItem('documents')) || [];
+        let documents = [];
+        try {
+            const storedData = localStorage.getItem('documents');
+            documents = storedData ? JSON.parse(storedData) : [];
+        } catch (e) {
+            console.error('Error accessing localStorage:', e);
+            alert('Unable to access localStorage. Data may not persist. Try a different browser or enable storage permissions.');
+        }
         let currentFolder = 'Home';
 
         // Function to save documents to localStorage
         function saveDocuments() {
-            localStorage.setItem('documents', JSON.stringify(documents));
+            try {
+                localStorage.setItem('documents', JSON.stringify(documents));
+            } catch (e) {
+                console.error('Error saving to localStorage:', e);
+                alert('Failed to save data. LocalStorage may be full or disabled. Download your data and clear some space.');
+            }
         }
 
         // Function to add a new document
@@ -177,7 +196,9 @@
             const a = document.createElement('a');
             a.href = url;
             a.download = `company_files_${currentFolder}.json`;
+            document.body.appendChild(a);
             a.click();
+            document.body.removeChild(a);
             URL.revokeObjectURL(url);
         }
 
