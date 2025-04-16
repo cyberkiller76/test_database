@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Company File Server</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            background-color: #e6f0fa;
+        }
+        .sidebar {
+            background-color: #f0f0f0;
+            border-right: 1px solid #ccc;
+        }
+        .header {
+            background-color: #3366cc;
+            color: white;
+            font-weight: bold;
+        }
+        .list-item:hover {
+            background-color: #d3e0f7;
+        }
+        .truncate {
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        input, select, button {
+            border: 1px solid #999;
+        }
+        button {
+            background-color: #f0f0f0;
+            padding: 2px 8px;
+        }
+        button:hover {
+            background-color: #e0e0e0;
+        }
+    </style>
+</head>
+<body>
+    <div class="flex min-h-screen">
+        <!-- Sidebar -->
+        <div class="sidebar w-64 p-4">
+            <div class="mb-4">
+                <h2 class="text-sm font-bold">User</h2>
+                <p class="text-sm">Guest (Local)</p>
+            </div>
+
+            <!-- Folder Navigation -->
+            <div class="mb-4">
+                <h2 class="text-sm font-bold">Folder</h2>
+                <div id="folderNav" class="text-sm">
+                    <a href="#" onclick="navigateFolder('Home')" class="text-blue-600 hover:underline">Home</a>
+                    <span id="currentPath" class="ml-1"></span>
+                </div>
+                <p class="text-xs text-gray-600 mt-1" id="folderStats">0 folders, 0 files</p>
+            </div>
+
+            <!-- Add Document -->
+            <div class="mb-4">
+                <h2 class="text-sm font-bold">Add Document</h2>
+                <div class="space-y-2">
+                    <input id="docTitle" type="text" placeholder="Document Title" class="w-full p-1 text-sm">
+                    <textarea id="docContent" placeholder="Content" class="w-full p-1 text-sm" rows="3"></textarea>
+                    <input id="docTags" type="text" placeholder="Tags (comma-separated)" class="w-full p-1 text-sm">
+                    <select id="docFolder" class="w-full p-1 text-sm">
+                        <option value="General">General</option>
+                        <option value="HR">HR</option>
+                        <option value="Finance">Finance</option>
+                        <option value="IT">IT</option>
+                        <option value="Marketing">Marketing</option>
+                        <option value="Operations">Operations</option>
+                    </select>
+                    <button onclick="addDocument()" class="w-full text-sm">Add</button>
+                </div>
+            </div>
+
+            <!-- Search -->
+            <div class="mb-4">
+                <h2 class="text-sm font-bold">Search</h2>
+                <div class="flex space-x-1">
+                    <input id="searchInput" type="text" placeholder="Search..." class="w-full p-1 text-sm" onkeyup="searchDocuments()">
+                    <button onclick="searchDocuments()" class="text-sm">Go</button>
+                </div>
+            </div>
+
+            <!-- Select (Placeholder) -->
+            <div class="mb-4">
+                <h2 class="text-sm font-bold">Select</h2>
+                <div class="flex space-x-1">
+                    <button class="text-sm">All</button>
+                    <button class="text-sm">Invert</button>
+                    <button class="text-sm">Mask</button>
+                </div>
+                <p class="text-xs text-gray-600 mt-1">0 items selected</p>
+            </div>
+
+            <!-- Actions -->
+            <div class="mb-4">
+                <h2 class="text-sm font-bold">Actions</h2>
+                <div class="flex space-x-1">
+                    <button onclick="downloadDocuments()" class="text-sm">Archive</button>
+                    <button onclick="getList()" class="text-sm">Get List</button>
+                </div>
+            </div>
+
+            <!-- Server Information -->
+            <div>
+                <h2 class="text-sm font-bold">Server Information</h2>
+                <p class="text-xs">Company File Server</p>
+                <p class="text-xs">Server time: <span id="serverTime"></span></p>
+                <p class="text-xs">Uptime: Simulated</p>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="flex-1 p-4">
+            <!-- Document List -->
+            <div class="border border-gray-300">
+                <div class="header grid grid-cols-4 p-2 text-sm">
+                    <div>Name</div>
+                    <div>Size</div>
+                    <div>Timestamp</div>
+                    <div>Hits</div>
+                </div>
+                <div id="docList" class="text-sm"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Initialize documents array from localStorage
+        let documents = JSON.parse(localStorage.getItem('documents')) || [];
+        let currentFolder = 'Home';
+
+        // Function to save documents to localStorage
+        function saveDocuments() {
+            localStorage.setItem('documents', JSON.stringify(documents));
+        }
+
+        // Function to add a new document
+        function addDocument() {
+            const title = document.getElementById('docTitle').value.trim();
+            const content = document.getElementById('docContent').value.trim();
+            const tags = document.getElementById('docTags').value.split(',').map(tag => tag.trim()).filter(tag => tag);
+            const folder = document.getElementById('docFolder').value;
+
+            if (title && content) {
+                const doc = {
+                    id: Date.now(),
+                    title,
+                    content,
+                    tags,
+                    folder,
+                    createdAt: new Date().toLocaleString()
+                };
+                documents.push(doc);
+                saveDocuments();
+                document.getElementById('docTitle').value = '';
+                document.getElementById('docContent').value = '';
+                document.getElementById('docTags').value = '';
+                document.getElementById('docFolder').value = 'General';
+                navigateFolder(currentFolder);
+            } else {
+                alert('Please enter a title and content.');
+            }
+        }
+
+        // Function to delete a document
+        function deleteDocument(id) {
+            documents = documents.filter(doc => doc.id !== id);
+            saveDocuments();
+            navigateFolder(currentFolder);
+        }
+
+        // Function to download documents as JSON
+        function downloadDocuments() {
+            const filteredDocs = currentFolder === 'Home' ? documents : documents.filter(doc => doc.folder === currentFolder);
+            const dataStr = JSON.stringify(filteredDocs, null, 2);
+            const blob = new Blob([dataStr], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `company_files_${currentFolder}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
+        // Function to get raw list (simulating HFS's "Get List")
+        function getList() {
+            const filteredDocs = currentFolder === 'Home' ? documents : documents.filter(doc => doc.folder === currentFolder);
+            console.log(JSON.stringify(filteredDocs, null, 2));
+            alert('Document list logged to console. Press F12 to view.');
+        }
+
+        // Function to navigate folders
+        function navigateFolder(folder) {
+            currentFolder = folder;
+            document.getElementById('currentPath').textContent = folder === 'Home' ? '' : `> ${folder}`;
+            renderDocuments();
+        }
+
+        // Function to render documents
+        function renderDocuments() {
+            const docList = document.getElementById('docList');
+            docList.innerHTML = '';
+
+            // Filter documents based on current folder
+            let filteredDocs = currentFolder === 'Home' ? documents : documents.filter(doc => doc.folder === currentFolder);
+
+            // Update folder stats
+            const folders = [...new Set(documents.map(doc => doc.folder))];
+            const stats = currentFolder === 'Home' ? `${folders.length} folders, ${filteredDocs.length} files` : `0 folders, ${filteredDocs.length} files`;
+            document.getElementById('folderStats').textContent = stats;
+
+            filteredDocs.forEach(doc => {
+                const docRow = document.createElement('div');
+                docRow.className = 'grid grid-cols-4 p-2 border-t list-item';
+                const size = new TextEncoder().encode(doc.content).length; // Size in bytes
+                docRow.innerHTML = `
+                    <div class="truncate">${doc.title}</div>
+                    <div>${size} B</div>
+                    <div>${doc.createdAt}</div>
+                    <div>0</div>
+                `;
+                const deleteBtn = document.createElement('button');
+                deleteBtn.textContent = 'Delete';
+                deleteBtn.className = 'text-red-600 hover:underline text-xs';
+                deleteBtn.onclick = () => deleteDocument(doc.id);
+                docRow.appendChild(deleteBtn);
+                docList.appendChild(docRow);
+            });
+        }
+
+        // Function to search documents
+        function searchDocuments() {
+            const query = document.getElementById('searchInput').value.toLowerCase();
+            let filteredDocs = currentFolder === 'Home' ? documents : documents.filter(doc => doc.folder === currentFolder);
+
+            if (query) {
+                filteredDocs = filteredDocs.filter(doc =>
+                    doc.title.toLowerCase().includes(query) ||
+                    doc.tags.some(tag => tag.toLowerCase().includes(query))
+                );
+            }
+
+            const docList = document.getElementById('docList');
+            docList.innerHTML = '';
+            filteredDocs.forEach(doc => {
+                const docRow = document.createElement('div');
+                docRow.className = 'grid grid-cols-4 p-2 border-t list-item';
+                const size = new TextEncoder().encode(doc.content).length;
+                docRow.innerHTML = `
+                    <div class="truncate">${doc.title}</div>
+                    <div>${size} B</div>
+                    <div>${doc.createdAt}</div>
+                    <div>0</div>
+                `;
+                const deleteBtn = document.createElement('button');
+                deleteBtn.textContent = 'Delete';
+                deleteBtn.className = 'text-red-600 hover:underline text-xs';
+                deleteBtn.onclick = () => deleteDocument(doc.id);
+                docRow.appendChild(deleteBtn);
+                docList.appendChild(docRow);
+            });
+        }
+
+        // Update server time
+        function updateServerTime() {
+            const now = new Date();
+            document.getElementById('serverTime').textContent = now.toLocaleString();
+        }
+        setInterval(updateServerTime, 1000);
+        updateServerTime();
+
+        // Initial render
+        navigateFolder('Home');
+    </script>
+</body>
+</html>
