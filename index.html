@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Company File Server</title>
+    <title>Maxel File Server</title>
     <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
     <style>
         body {
@@ -37,6 +37,16 @@
         button:hover {
             background-color: #e0e0e0;
         }
+        /* Ensure consistent column widths */
+        .doc-table {
+            display: grid;
+            grid-template-columns: 2fr 1fr 2fr 1fr 1fr; /* Adjusted for Name, Size, Timestamp, Hits, Delete */
+            align-items: center;
+        }
+        .doc-table > div {
+            padding: 0.5rem;
+            overflow: hidden;
+        }
     </style>
 </head>
 <body>
@@ -45,7 +55,7 @@
         <div class="sidebar w-64 p-4">
             <div class="mb-4">
                 <h2 class="text-sm font-bold">User</h2>
-                <p class="text-sm">Guest (Local)</p>
+                <p class="text-sm">Admin</p>
             </div>
 
             <!-- Folder Navigation -->
@@ -105,7 +115,7 @@
             <!-- Server Information -->
             <div>
                 <h2 class="text-sm font-bold">Server Information</h2>
-                <p class="text-xs">Company File Server</p>
+                <p class="text-xs">Maxel File Server</p>
                 <p class="text-xs">Server time: <span id="serverTime"></span></p>
                 <p class="text-xs">Uptime: Simulated</p>
             </div>
@@ -115,11 +125,12 @@
         <div class="flex-1 p-4">
             <!-- Document List -->
             <div class="border border-gray-300">
-                <div class="header grid grid-cols-4 p-2 text-sm">
+                <div class="header doc-table p-2 text-sm">
                     <div>Name</div>
                     <div>Size</div>
                     <div>Timestamp</div>
                     <div>Hits</div>
+                    <div>Actions</div>
                 </div>
                 <div id="docList" class="text-sm"></div>
             </div>
@@ -227,19 +238,17 @@
 
             filteredDocs.forEach(doc => {
                 const docRow = document.createElement('div');
-                docRow.className = 'grid grid-cols-4 p-2 border-t list-item';
+                docRow.className = 'doc-table border-t list-item';
                 const size = new TextEncoder().encode(doc.content).length; // Size in bytes
                 docRow.innerHTML = `
                     <div class="truncate">${doc.title}</div>
                     <div>${size} B</div>
                     <div>${doc.createdAt}</div>
                     <div>0</div>
+                    <div>
+                        <button onclick="deleteDocument(${doc.id})" class="text-red-600 hover:underline text-xs border border-gray-300 px-2 py-1">Delete</button>
+                    </div>
                 `;
-                const deleteBtn = document.createElement('button');
-                deleteBtn.textContent = 'Delete';
-                deleteBtn.className = 'text-red-600 hover:underline text-xs';
-                deleteBtn.onclick = () => deleteDocument(doc.id);
-                docRow.appendChild(deleteBtn);
                 docList.appendChild(docRow);
             });
         }
@@ -260,19 +269,17 @@
             docList.innerHTML = '';
             filteredDocs.forEach(doc => {
                 const docRow = document.createElement('div');
-                docRow.className = 'grid grid-cols-4 p-2 border-t list-item';
+                docRow.className = 'doc-table border-t list-item';
                 const size = new TextEncoder().encode(doc.content).length;
                 docRow.innerHTML = `
                     <div class="truncate">${doc.title}</div>
                     <div>${size} B</div>
                     <div>${doc.createdAt}</div>
                     <div>0</div>
+                    <div>
+                        <button onclick="deleteDocument(${doc.id})" class="text-red-600 hover:underline text-xs border border-gray-300 px-2 py-1">Delete</button>
+                    </div>
                 `;
-                const deleteBtn = document.createElement('button');
-                deleteBtn.textContent = 'Delete';
-                deleteBtn.className = 'text-red-600 hover:underline text-xs';
-                deleteBtn.onclick = () => deleteDocument(doc.id);
-                docRow.appendChild(deleteBtn);
                 docList.appendChild(docRow);
             });
         }
